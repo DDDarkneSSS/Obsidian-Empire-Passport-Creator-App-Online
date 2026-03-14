@@ -3,7 +3,7 @@
 <head>
   <link rel="icon" href="/icon.ico" type="image/x-icon">
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Obsidian Empire Passport Creator</title>
   <style>
     /* ----- все стили без изменений (из вашего исходного файла) ----- */
@@ -763,6 +763,51 @@
       object-fit: contain;
       margin-right: 8px;
     }
+	/* Адаптация для мобильных устройств (ширина экрана до 600px) */
+@media (max-width: 600px) {
+  body {
+    margin: 12px; /* чуть уменьшили отступы по краям */
+    font-size: 16px; /* фиксируем базовый размер шрифта для читаемости */
+  }
+
+  /* Кнопки и интерактивные элементы на всю ширину и покрупнее */
+  button,
+  .button,
+  input[type="submit"],
+  input[type="button"],
+  .btn {
+    width: 100%;
+    padding: 14px 20px;
+    font-size: 18px;
+    margin-bottom: 10px; /* добавим отступ между кнопками, если они в колонку */
+  }
+
+  /* Поля ввода тоже растягиваем */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  select,
+  textarea {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    margin-bottom: 10px;
+  }
+
+  /* Заголовки можно чуть уменьшить или оставить как есть */
+  h1 { font-size: 1.8rem; }
+  h2 { font-size: 1.5rem; }
+
+  /* Если есть элементы в несколько колонок (flex/grid) — переводим в одну */
+  .row, .flex-container, .grid-container {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* Скрываем некоторые десктопные элементы, если нужно */
+  /* .desktop-only { display: none; } */
+}
   </style>
 </head>
 <body class="theme-light">
