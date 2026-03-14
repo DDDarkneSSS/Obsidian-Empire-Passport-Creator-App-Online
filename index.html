@@ -3,8 +3,6 @@
 <head>
   <link rel="icon" href="/icon.ico" type="image/x-icon">
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Obsidian Empire Passport Creator</title>
   <style>
@@ -45,12 +43,6 @@
     * { box-sizing: border-box; }
     :root { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
     body {
-
-      margin: 16px;
-      background: var(--bg-body);
-      color: var(--text-body);
-      transition: background-color 0.2s, color 0.2s;
-
       margin: 0;
       padding: 16px;
       background: var(--bg-body);
@@ -61,7 +53,6 @@
       flex-direction: column;
       box-sizing: border-box;
 	  overflow-x: auto;
-
     }
 
     /* ----- Заголовок ----- */
@@ -190,12 +181,6 @@
     }
 
     /* двухколоночный макет */
-
-    .layout { display: flex; gap: 16px; align-items: flex-start; }
-
-    /* левая панель */
-    .left { min-width: 320px; max-width: 420px; }
-
     .layout {
       display: flex;
       gap: 16px;
@@ -282,13 +267,6 @@
 
     /* правая панель */
     .right-fixed-wrapper {
-      position: fixed;
-      right: 16px;
-      top: 80px;
-      width: 900px;
-      z-index: 2147483646;
-      width: 900px;
-      flex-shrink: 0;           /* запрещаем сжатие */
       width: 900px;
       flex-shrink: 0;           /* запрещаем сжатие */
       display: flex;
@@ -325,19 +303,12 @@
       align-self: flex-end;
     }
 
-    @media (max-width: 1300px) { .right-fixed-wrapper { display: none; } }
-
-    a8fa750 (изменено положение окна пререндера и ячеек)
-
     /* контейнер под превью */
     .buttons-under-preview {
       display: flex;
       flex-direction: column;
       gap: 20px;
       width: 100%;
-      max-height: calc(100vh - 650px);
-      overflow-y: auto;
-      overflow-x: hidden;
       padding-right: 4px;
       scrollbar-width: thin;
     }
@@ -803,51 +774,6 @@
       object-fit: contain;
       margin-right: 8px;
     }
-	/* Адаптация для мобильных устройств (ширина экрана до 600px) */
-@media (max-width: 600px) {
-  body {
-    margin: 12px; /* чуть уменьшили отступы по краям */
-    font-size: 16px; /* фиксируем базовый размер шрифта для читаемости */
-  }
-
-  /* Кнопки и интерактивные элементы на всю ширину и покрупнее */
-  button,
-  .button,
-  input[type="submit"],
-  input[type="button"],
-  .btn {
-    width: 100%;
-    padding: 14px 20px;
-    font-size: 18px;
-    margin-bottom: 10px; /* добавим отступ между кнопками, если они в колонку */
-  }
-
-  /* Поля ввода тоже растягиваем */
-  input[type="text"],
-  input[type="email"],
-  input[type="password"],
-  input[type="number"],
-  select,
-  textarea {
-    width: 100%;
-    padding: 12px;
-    font-size: 16px;
-    margin-bottom: 10px;
-  }
-
-  /* Заголовки можно чуть уменьшить или оставить как есть */
-  h1 { font-size: 1.8rem; }
-  h2 { font-size: 1.5rem; }
-
-  /* Если есть элементы в несколько колонок (flex/grid) — переводим в одну */
-  .row, .flex-container, .grid-container {
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  /* Скрываем некоторые десктопные элементы, если нужно */
-  /* .desktop-only { display: none; } */
-}
   </style>
 </head>
 <body class="theme-light">
@@ -880,15 +806,17 @@
     </div>
   </div>
 
-<div class="layout">
-  <div class="left">
-    <div class="groups" role="tablist" aria-label="Groups">
-      <button class="group-btn" data-group="badges" aria-pressed="true">Значки</button>
-      <button class="group-btn" data-group="backgrounds" aria-pressed="false">Фоны</button>
-      <button class="group-btn" data-group="banners" aria-pressed="false">Баннеры</button>
-      <button class="group-btn" data-group="frames" aria-pressed="false">Рамки</button>
-      <button class="group-btn" data-group="social" aria-pressed="false">Социальная</button>
-    </div>
+
+  <div class="layout">
+    <div class="left">
+      <div class="groups" role="tablist" aria-label="Groups">
+        <button class="group-btn" data-group="badges" aria-pressed="true">Значки</button>
+        <button class="group-btn" data-group="backgrounds" aria-pressed="false">Фоны</button>
+        <button class="group-btn" data-group="banners" aria-pressed="false">Баннеры</button>
+        <button class="group-btn" data-group="frames" aria-pressed="false">Рамки</button>
+        <button class="group-btn" data-group="social" aria-pressed="false">Социальная</button>
+      </div>
+
     <main id="app"></main>
     
     <div id="selected-slot-indicator" class="selection-hint" style="display: none;">
@@ -923,6 +851,7 @@
     </div>
   </div>
 </div>
+
 
 <div class="emoji-picker" id="emojiPicker">
   <div class="emoji-categories" id="emojiCategories"></div>
