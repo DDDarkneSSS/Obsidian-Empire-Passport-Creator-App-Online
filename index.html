@@ -185,9 +185,9 @@
       display: flex;
       gap: 16px;
       align-items: flex-start;
-      flex: 1;                     /* занимает всё доступное место по высоте */
-	  overflow-x: visible; /* или убрать overflow-x, так как горизонтальную берёт на себя body */
-      width: max-content;           /* ширина подстраивается под содержимое */
+      flex: 1;
+	  overflow-x: visible;
+      width: max-content;
     }
 
     /* левая панель */
@@ -211,6 +211,77 @@
       background: var(--button-active-bg);
       color: var(--button-active-text);
       border-color: var(--button-active-bg);
+    }
+
+    /* Поисковая строка */
+    .search-container {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .search-container input {
+      flex: 1;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border-light);
+      background: var(--panel-bg);
+      color: var(--text-body);
+      font-size: 14px;
+      outline: none;
+    }
+    .search-container input:focus {
+      border-color: var(--accent-color);
+    }
+    .search-clear {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border-light);
+      background: var(--button-bg);
+      color: var(--text-body);
+      cursor: pointer;
+      display: none;
+    }
+    .search-clear:hover {
+      background: var(--panel-bg-secondary);
+    }
+    .search-results {
+      display: none;
+      margin-bottom: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+      background: var(--panel-bg);
+      border-radius: 6px;
+      border: 1px solid var(--border-light);
+      padding: 8px;
+    }
+    .search-result-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 8px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+    .search-result-item:hover {
+      background: var(--panel-bg-secondary);
+    }
+    .search-result-item img {
+      width: 40px;
+      height: 40px;
+      object-fit: cover;
+      border-radius: 4px;
+      border: 1px solid var(--border-light);
+    }
+    .search-result-name {
+      font-weight: 500;
+      font-size: 13px;
+      color: var(--text-body);
+    }
+    .search-result-meta {
+      font-size: 11px;
+      color: var(--text-body);
+      opacity: 0.6;
     }
 
     .tabs { margin-top: 12px; }
@@ -268,7 +339,7 @@
     /* правая панель */
     .right-fixed-wrapper {
       width: 900px;
-      flex-shrink: 0;           /* запрещаем сжатие */
+      flex-shrink: 0;
       display: flex;
       flex-direction: column;
       gap: 12px;
@@ -292,15 +363,32 @@
       display: block;
       border-radius: 6px;
     }
-    #save-fixed-btn {
-      width: 160px;
+    .save-controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+	  justify-content: center;
+      flex-wrap: wrap;
+    }
+    .save-btn {
       padding: 10px 14px;
       border-radius: 6px;
-      border: 1px solid var(--button-active-bg);
+      cursor: pointer;
+      font-weight: 600;
+      border: 1px solid var(--button-border);
+      background: var(--button-bg);
+      color: var(--text-body);
+    }
+    .save-btn.primary {
       background: var(--button-active-bg);
       color: var(--button-active-text);
-      cursor: pointer;
-      align-self: flex-end;
+      border-color: var(--button-active-bg);
+    }
+    .save-btn:hover {
+      filter: brightness(0.95);
+    }
+    #passport-file-input {
+      display: none;
     }
 
     /* контейнер под превью */
@@ -817,6 +905,13 @@
         <button class="group-btn" data-group="social" aria-pressed="false">Социальная</button>
       </div>
 
+      <!-- Поисковая строка -->
+      <div class="search-container">
+        <input type="text" id="search-input" placeholder="🔍 Поиск значков, фонов, баннеров...">
+        <button class="search-clear" id="search-clear">✕</button>
+      </div>
+      <div class="search-results" id="search-results"></div>
+
     <main id="app"></main>
     
     <div id="selected-slot-indicator" class="selection-hint" style="display: none;">
@@ -833,7 +928,12 @@
       <canvas id="previewCanvas" width="900" height="500"></canvas>
     </div>
 
-    <button id="save-fixed-btn">Сохранить PNG 1600x900</button>
+    <div class="save-controls">
+      <button id="save-fixed-btn" class="save-btn primary">Сохранить PNG 1600x900</button>
+      <button id="save-passport-btn" class="save-btn">💾 Сохранить .passport</button>
+      <button id="load-passport-btn" class="save-btn">📂 Загрузить .passport</button>
+      <input type="file" id="passport-file-input" accept=".passport">
+    </div>
 
     <div class="buttons-under-preview">
       <div class="badges-grid-under" id="badges-grid-under">
@@ -879,58 +979,148 @@
 
     await loadLocalization();
 
-    // ========== УПРАВЛЕНИЕ ТЕМАМИ И ФОНОМ СЛОТОВ ==========
-    const body = document.body;
-    const lightBtn = document.getElementById('theme-light');
-    const darkBtn = document.getElementById('theme-dark');
-    const colorPicker = document.getElementById('theme-color');
-    const slotBgPicker = document.getElementById('slot-bg-color');
-    const slotBgReset = document.getElementById('slot-bg-reset');
+// ========== УПРАВЛЕНИЕ ТЕМАМИ И ФОНОМ СЛОТОВ (С СОХРАНЕНИЕМ В localStorage) ==========
+const body = document.body;
+const lightBtn = document.getElementById('theme-light');
+const darkBtn = document.getElementById('theme-dark');
+const colorPicker = document.getElementById('theme-color');
+const slotBgPicker = document.getElementById('slot-bg-color');
+const slotBgReset = document.getElementById('slot-bg-reset');
 
-    function darkenColor(hex, factor = 0.7) {
-      let r = parseInt(hex.slice(1,3), 16);
-      let g = parseInt(hex.slice(3,5), 16);
-      let b = parseInt(hex.slice(5,7), 16);
-      r = Math.floor(r * factor);
-      g = Math.floor(g * factor);
-      b = Math.floor(b * factor);
-      return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
-    }
+// Стандартные цвета
+const DEFAULT_ACCENT_COLOR = '#ffaa00';
+const DEFAULT_SLOT_BG = '#b27700';
 
-    function setActiveTheme(theme) {
-      lightBtn.classList.toggle('active', theme === 'light');
-      darkBtn.classList.toggle('active', theme === 'dark');
-      body.classList.toggle('theme-dark', theme === 'dark');
-      body.classList.toggle('theme-light', theme === 'light');
-    }
+function darkenColor(hex, factor = 0.7) {
+  let r = parseInt(hex.slice(1,3), 16);
+  let g = parseInt(hex.slice(3,5), 16);
+  let b = parseInt(hex.slice(5,7), 16);
+  r = Math.floor(r * factor);
+  g = Math.floor(g * factor);
+  b = Math.floor(b * factor);
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+}
 
-    lightBtn.addEventListener('click', () => setActiveTheme('light'));
-    darkBtn.addEventListener('click', () => setActiveTheme('dark'));
+function resetToDefaultColors() {
+  // Сбрасываем акцентный цвет
+  colorPicker.value = DEFAULT_ACCENT_COLOR;
+  document.documentElement.style.setProperty('--accent-color', DEFAULT_ACCENT_COLOR);
+  document.documentElement.style.setProperty('--accent-dark', darkenColor(DEFAULT_ACCENT_COLOR));
+  
+  // Сбрасываем фон слотов
+  slotBgPicker.value = DEFAULT_SLOT_BG;
+  document.documentElement.style.setProperty('--slot-bg', DEFAULT_SLOT_BG);
+  
+  // Сохраняем в localStorage
+  try {
+    localStorage.setItem('passport-accent-color', DEFAULT_ACCENT_COLOR);
+    localStorage.setItem('passport-slot-bg', DEFAULT_SLOT_BG);
+  } catch (e) {
+    console.warn('Не удалось сохранить цвета:', e);
+  }
+  
+  // Показываем уведомление
+  showToast('🎨 Палитра сброшена к стандартной');
+}
 
-    function updateAccentColor(color) {
-      document.documentElement.style.setProperty('--accent-color', color);
-      document.documentElement.style.setProperty('--accent-dark', darkenColor(color));
-      if (!document.documentElement.style.getPropertyValue('--slot-bg')) {
-        slotBgPicker.value = darkenColor(color);
-      }
-    }
+function setActiveTheme(theme) {
+  lightBtn.classList.toggle('active', theme === 'light');
+  darkBtn.classList.toggle('active', theme === 'dark');
+  body.classList.toggle('theme-dark', theme === 'dark');
+  body.classList.toggle('theme-light', theme === 'light');
+  try {
+    localStorage.setItem('passport-theme', theme);
+  } catch (e) {
+    console.warn('Не удалось сохранить тему:', e);
+  }
+}
 
-    colorPicker.addEventListener('input', (e) => {
-      updateAccentColor(e.target.value);
-    });
+// Восстанавливаем сохранённую тему
+try {
+  const savedTheme = localStorage.getItem('passport-theme') || 'light';
+  setActiveTheme(savedTheme);
+} catch (e) {
+  console.warn('Не удалось загрузить тему:', e);
+  setActiveTheme('light');
+}
 
-    slotBgPicker.addEventListener('input', (e) => {
-      document.documentElement.style.setProperty('--slot-bg', e.target.value);
-    });
+lightBtn.addEventListener('click', () => setActiveTheme('light'));
+darkBtn.addEventListener('click', () => setActiveTheme('dark'));
 
-    slotBgReset.addEventListener('click', () => {
-      document.documentElement.style.removeProperty('--slot-bg');
-      const accentDark = getComputedStyle(document.documentElement).getPropertyValue('--accent-dark').trim();
-      slotBgPicker.value = accentDark;
-    });
+function updateAccentColor(color) {
+  document.documentElement.style.setProperty('--accent-color', color);
+  document.documentElement.style.setProperty('--accent-dark', darkenColor(color));
+  // Обновляем фон слотов, если он не был изменён пользователем отдельно
+  if (!localStorage.getItem('passport-slot-bg') || localStorage.getItem('passport-slot-bg') === slotBgPicker.value) {
+    slotBgPicker.value = darkenColor(color);
+    document.documentElement.style.setProperty('--slot-bg', darkenColor(color));
+  }
+  try {
+    localStorage.setItem('passport-accent-color', color);
+  } catch (e) {
+    console.warn('Не удалось сохранить цвет:', e);
+  }
+}
 
-    const initialAccentDark = darkenColor(colorPicker.value);
-    slotBgPicker.value = initialAccentDark;
+// Восстанавливаем сохранённый акцентный цвет
+try {
+  const savedColor = localStorage.getItem('passport-accent-color');
+  if (savedColor) {
+    colorPicker.value = savedColor;
+    updateAccentColor(savedColor);
+  } else {
+    updateAccentColor(DEFAULT_ACCENT_COLOR);
+  }
+} catch (e) {
+  console.warn('Не удалось загрузить цвет:', e);
+  updateAccentColor(DEFAULT_ACCENT_COLOR);
+}
+
+colorPicker.addEventListener('input', (e) => {
+  updateAccentColor(e.target.value);
+});
+
+// Восстанавливаем сохранённый фон слотов
+try {
+  const savedSlotBg = localStorage.getItem('passport-slot-bg');
+  if (savedSlotBg) {
+    slotBgPicker.value = savedSlotBg;
+    document.documentElement.style.setProperty('--slot-bg', savedSlotBg);
+  } else {
+    // Если не сохранён, используем стандартный
+    slotBgPicker.value = DEFAULT_SLOT_BG;
+    document.documentElement.style.setProperty('--slot-bg', DEFAULT_SLOT_BG);
+  }
+} catch (e) {
+  console.warn('Не удалось загрузить фон слотов:', e);
+  slotBgPicker.value = DEFAULT_SLOT_BG;
+  document.documentElement.style.setProperty('--slot-bg', DEFAULT_SLOT_BG);
+}
+
+slotBgPicker.addEventListener('input', (e) => {
+  const color = e.target.value;
+  document.documentElement.style.setProperty('--slot-bg', color);
+  try {
+    localStorage.setItem('passport-slot-bg', color);
+  } catch (e) {
+    console.warn('Не удалось сохранить фон слотов:', e);
+  }
+});
+
+// Кнопка сброса - сбрасывает всё к стандартной оранжевой палитре
+slotBgReset.addEventListener('click', resetToDefaultColors);
+
+// Если нет сохранённых настроек, устанавливаем стандартные
+if (!localStorage.getItem('passport-accent-color')) {
+  colorPicker.value = DEFAULT_ACCENT_COLOR;
+  document.documentElement.style.setProperty('--accent-color', DEFAULT_ACCENT_COLOR);
+  document.documentElement.style.setProperty('--accent-dark', darkenColor(DEFAULT_ACCENT_COLOR));
+}
+
+if (!localStorage.getItem('passport-slot-bg')) {
+  slotBgPicker.value = DEFAULT_SLOT_BG;
+  document.documentElement.style.setProperty('--slot-bg', DEFAULT_SLOT_BG);
+}
 
     // ========== ДАННЫЕ (ТОЛЬКО КАТЕГОРИИ) ==========
     const data = {
@@ -980,6 +1170,11 @@
     const checkAvatar = document.getElementById('check-avatar');
     const checkText = document.getElementById('check-text');
     const saveBtn = document.getElementById('save-fixed-btn');
+
+    // Элементы поиска
+    const searchInput = document.getElementById('search-input');
+    const searchClear = document.getElementById('search-clear');
+    const searchResults = document.getElementById('search-results');
 
     let currentGroup = 'badges';
     let currentCategory = data.badges[0];
@@ -1831,18 +2026,16 @@
 
       panel.innerHTML = '<p>Загрузка...</p>';
       try {
-        // Загружаем общий index.json для группы
         const response = await fetch(`${group}/index.json`);
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
         }
-        const allFiles = await response.json(); // массив вида ["all/1.png", "creators/2.png", ...]
+        const allFiles = await response.json();
 
-        // Фильтруем файлы, относящиеся к текущей категории
         const prefix = category + '/';
         const fileList = allFiles
           .filter(item => item.startsWith(prefix))
-          .map(item => item.slice(prefix.length)); // убираем префикс
+          .map(item => item.slice(prefix.length));
 
         if (fileList.length === 0) {
           panel.innerHTML = '<p>Нет файлов в этой категории</p>';
@@ -1865,6 +2058,7 @@
           img.loading = 'lazy';
           img.alt = `${category} ${name}`;
           img.src = src;
+          img.srcset = `${src} 1x, ${src640} 2x`;
           img.width = 300; img.height = 300;
           const meta = document.createElement('div');
           meta.className = 'meta';
@@ -2188,6 +2382,40 @@
       formatRow.appendChild(strikeBtn);
       div.appendChild(formatRow);
 
+      // Функция для автоматического применения всех изменений
+      function applyAllChanges() {
+        passportState.social.nick = nickInput.value;
+        passportState.social.nickColor = nickColor.value;
+        passportState.social.nickFont = nickFontSelect.value;
+        passportState.social.nickFontSize = parseInt(nickSizeInput.value, 10) || 24;
+        passportState.social.date = dateInput.value;
+        passportState.social.dateColor = dateColor.value;
+        passportState.social.dateFont = dateFontSelect.value;
+        passportState.social.dateFontSize = parseInt(dateSizeInput.value, 10) || 24;
+        passportState.social.about = aboutInput.value;
+        passportState.social.aboutColor = aboutColor.value;
+        passportState.social.aboutFont = aboutFontSelect.value;
+        passportState.social.aboutFontSize = parseInt(aboutSizeInput.value, 10) || 24;
+        drawPreview();
+      }
+
+      // Автоматическое применение при изменении любых полей
+      nickInput.addEventListener('input', applyAllChanges);
+      nickColor.addEventListener('input', applyAllChanges);
+      nickFontSelect.addEventListener('change', applyAllChanges);
+      nickSizeInput.addEventListener('input', applyAllChanges);
+      
+      dateInput.addEventListener('input', applyAllChanges);
+      dateColor.addEventListener('input', applyAllChanges);
+      dateFontSelect.addEventListener('change', applyAllChanges);
+      dateSizeInput.addEventListener('input', applyAllChanges);
+      
+      aboutInput.addEventListener('input', applyAllChanges);
+      aboutColor.addEventListener('input', applyAllChanges);
+      aboutFontSelect.addEventListener('change', applyAllChanges);
+      aboutSizeInput.addEventListener('input', applyAllChanges);
+
+      // Фокус для активного ввода
       [nickInput, dateInput, aboutInput].forEach(input => {
         input.addEventListener('focus', () => {
           activeInput = input;
@@ -2232,30 +2460,11 @@
       }
       
       refreshFontSelects();
-
-      const updateBtn = document.createElement('button');
-      updateBtn.className = 'upload-btn';
-      updateBtn.textContent = 'Применить';
-      updateBtn.addEventListener('click', () => {
-        passportState.social.nick = nickInput.value;
-        passportState.social.nickColor = nickColor.value;
-        passportState.social.nickFont = nickFontSelect.value;
-        passportState.social.nickFontSize = parseInt(nickSizeInput.value, 10) || 24;
-        passportState.social.date = dateInput.value;
-        passportState.social.dateColor = dateColor.value;
-        passportState.social.dateFont = dateFontSelect.value;
-        passportState.social.dateFontSize = parseInt(dateSizeInput.value, 10) || 24;
-        passportState.social.about = aboutInput.value;
-        passportState.social.aboutColor = aboutColor.value;
-        passportState.social.aboutFont = aboutFontSelect.value;
-        passportState.social.aboutFontSize = parseInt(aboutSizeInput.value, 10) || 24;
-        drawPreview();
-      });
-      div.appendChild(updateBtn);
       
+      // Кнопка очистки
       const clearBtn = document.createElement('button');
       clearBtn.className = 'clear-btn';
-      clearBtn.textContent = 'Очистить';
+      clearBtn.textContent = 'Очистить все';
       clearBtn.addEventListener('click', () => {
         nickInput.value = '';
         dateInput.value = '';
@@ -2283,6 +2492,7 @@
       });
       div.appendChild(clearBtn);
 
+      // Загрузка шрифтов
       const uploadRow = document.createElement('div');
       uploadRow.style.margin = '15px 0';
       const fileInput = document.createElement('input');
@@ -2318,18 +2528,12 @@
           }
         }
         refreshFontSelects();
+        applyAllChanges();
         fileInput.value = '';
       });
       uploadRow.appendChild(uploadFontBtn);
       uploadRow.appendChild(fileInput);
       div.appendChild(uploadRow);
-
-      [nickInput, dateInput, aboutInput].forEach(input => {
-        input.addEventListener('input', () => {
-          updatePassportFromInputs();
-          drawPreview();
-        });
-      });
       
       container.appendChild(div);
     }
@@ -2554,6 +2758,20 @@
         currentGroup = btn.dataset.group;
         currentCategory = data[currentGroup][0];
         buildTabs(currentGroup);
+        
+        // Скрываем поиск, если выбрана вкладка "Социальная"
+        const searchContainer = document.querySelector('.search-container');
+        const searchResultsEl = document.getElementById('search-results');
+        if (currentGroup === 'social') {
+          searchContainer.style.display = 'none';
+          searchResultsEl.style.display = 'none';
+          // Очищаем поиск
+          searchInput.value = '';
+          searchClear.style.display = 'none';
+        } else {
+          searchContainer.style.display = 'flex';
+        }
+        
         if (currentGroup === 'badges') {
           badgesGrid.style.display = 'block';
           bannersUnder.style.display = 'none';
@@ -2696,6 +2914,407 @@
       }
     }
 
+    // ========== ПОИСК ==========
+    let searchTimeout = null;
+    let allAssetsCache = {};
+
+    // Собираем все доступные ассеты для поиска
+    async function buildSearchCache() {
+      const groups = ['badges', 'backgrounds', 'banners', 'frames'];
+      allAssetsCache = {};
+  
+      // Карта перевода названий групп
+      const groupNames = {
+        'badges': 'Значки',
+        'backgrounds': 'Фоны',
+        'banners': 'Баннеры',
+        'frames': 'Рамки'
+      };
+  
+      for (const group of groups) {
+        try {
+          const res = await fetch(`${group}/index.json`);
+          if (res.ok) {
+            const files = await res.json();
+            allAssetsCache[group] = files.map(file => {
+              const category = file.split('/')[0];
+              const filename = file.split('/').pop();
+              // Получаем локализованное имя категории
+              const categoryName = localization?.[group]?.[category]?.["_name"] || category;
+              // Получаем локализованное имя файла
+              const displayName = getLocalizedName(group, category, filename);
+              // Формируем красивый путь для отображения
+              const displayPath = `${groupNames[group] || group} / ${categoryName}`;
+              
+              return {
+                path: file,
+                category: category,
+                filename: filename,
+                fullPath: `${group}/${file}`,
+                displayName: displayName,
+                displayPath: displayPath,
+                groupName: groupNames[group] || group,
+                categoryName: categoryName
+              };
+            });
+          }
+        } catch (e) {
+          console.warn(`Не удалось загрузить кэш для ${group}`, e);
+        }
+      }
+    }
+
+    function performSearch(query) {
+      if (!query || query.trim().length < 1) {
+        searchResults.style.display = 'none';
+        searchClear.style.display = 'none';
+        return;
+      }
+  
+      const q = query.toLowerCase().trim();
+      const results = [];
+      
+      for (const [group, assets] of Object.entries(allAssetsCache)) {
+        for (const asset of assets) {
+          // Пропускаем файлы "убрать" (0.png)
+          if (asset.filename === '0.png') continue;
+
+          // Ищем по локализованному имени, категории и группе
+          const searchable = `${asset.displayName} ${asset.categoryName} ${asset.groupName} ${asset.filename}`.toLowerCase();
+          if (searchable.includes(q)) {
+            results.push({
+              ...asset,
+              group: group
+            });
+          }
+        }
+      }
+  
+      // Сортируем по релевантности
+      results.sort((a, b) => {
+        const aName = a.displayName.toLowerCase();
+        const bName = b.displayName.toLowerCase();
+        const aExact = aName === q ? 0 : aName.startsWith(q) ? 1 : 2;
+        const bExact = bName === q ? 0 : bName.startsWith(q) ? 1 : 2;
+        return aExact - bExact;
+      });
+      
+      if (results.length === 0) {
+        searchResults.innerHTML = '<p style="padding: 8px; text-align: center; color: var(--text-body); opacity: 0.7;">Ничего не найдено</p>';
+        searchResults.style.display = 'block';
+        searchClear.style.display = 'block';
+        return;
+      }
+  
+      // Показываем до 20 результатов
+      const showResults = results.slice(0, 20);
+      searchResults.innerHTML = showResults.map(r => `
+        <div class="search-result-item" data-group="${r.group}" data-category="${r.category}" data-filename="${r.filename}" data-fullpath="${r.fullPath}">
+          <img src="${r.fullPath}" onerror="this.style.display='none'" alt="${r.displayName}">
+          <div>
+            <div class="search-result-name">${r.displayName}</div>
+            <div class="search-result-meta">${r.displayPath}</div>
+          </div>
+        </div>
+      `).join('');
+  
+      // Добавляем обработчики кликов
+      searchResults.querySelectorAll('.search-result-item').forEach(el => {
+        el.addEventListener('click', async () => {
+          const group = el.dataset.group;
+          const category = el.dataset.category;
+          
+          // Переключаемся на нужную группу и категорию
+          currentGroup = group;
+          currentCategory = category;
+          
+          // Обновляем кнопки групп
+          document.querySelectorAll('.group-btn').forEach(b => {
+            b.setAttribute('aria-pressed', b.dataset.group === group ? 'true' : 'false');
+          });
+          
+          // Перестраиваем табы
+          buildTabs(group);
+          
+          // Показываем соответствующий блок под превью
+          if (group === 'badges') {
+            badgesGrid.style.display = 'block';
+            bannersUnder.style.display = 'none';
+          } else if (group === 'banners') {
+            badgesGrid.style.display = 'none';
+            bannersUnder.style.display = 'block';
+          } else {
+            badgesGrid.style.display = 'none';
+            bannersUnder.style.display = 'none';
+          }
+          
+          // Очищаем поиск
+          searchInput.value = '';
+          searchResults.style.display = 'none';
+          searchClear.style.display = 'none';
+        });
+      });
+      
+      searchResults.style.display = 'block';
+      searchClear.style.display = 'block';
+    }
+
+    // Обработчик ввода в поиск
+    searchInput.addEventListener('input', () => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        performSearch(searchInput.value);
+      }, 300);
+    });
+
+    // Очистка поиска
+    searchClear.addEventListener('click', () => {
+      searchInput.value = '';
+      searchResults.style.display = 'none';
+      searchClear.style.display = 'none';
+    });
+
+    // ========== СОХРАНЕНИЕ/ЗАГРУЗКА .PASSPORT ==========
+    function getPassportData() {
+      return {
+        version: '1.0',
+        timestamp: new Date().toISOString(),
+        background: passportState.background ? {
+          src: passportState.background.src,
+          file: passportState.background.file,
+          category: passportState.background.category
+        } : null,
+        frame: passportState.frame ? {
+          isComposite: passportState.frame.isComposite || false,
+          src: passportState.frame.src || passportState.frame.back?.src || null,
+          file: passportState.frame.file || null,
+          category: passportState.frame.category || null,
+          backSrc: passportState.frame.back?.src || null,
+          coverSrc: passportState.frame.cover?.src || null
+        } : null,
+        leftBanner: passportState.leftBanner ? {
+          src: passportState.leftBanner.src,
+          file: passportState.leftBanner.file,
+          category: passportState.leftBanner.category,
+          flipped: passportState.leftBanner.flipped || false
+        } : null,
+        rightBanner: passportState.rightBanner ? {
+          src: passportState.rightBanner.src,
+          file: passportState.rightBanner.file,
+          category: passportState.rightBanner.category,
+          flipped: passportState.rightBanner.flipped || false
+        } : null,
+        badges: passportState.badges.map(b => b ? {
+          src: b.src,
+          file: b.file,
+          category: b.category
+        } : null),
+        favoriteBadges: passportState.favoriteBadges.map(b => b ? {
+          src: b.src,
+          file: b.file,
+          category: b.category
+        } : null),
+        social: {
+          avatar: passportState.social.avatar ? {
+            src: passportState.social.avatar.src,
+            file: passportState.social.avatar.file
+          } : null,
+          nick: passportState.social.nick,
+          nickColor: passportState.social.nickColor,
+          nickFont: passportState.social.nickFont,
+          nickFontSize: passportState.social.nickFontSize,
+          date: passportState.social.date,
+          dateColor: passportState.social.dateColor,
+          dateFont: passportState.social.dateFont,
+          dateFontSize: passportState.social.dateFontSize,
+          about: passportState.social.about,
+          aboutColor: passportState.social.aboutColor,
+          aboutFont: passportState.social.aboutFont,
+          aboutFontSize: passportState.social.aboutFontSize,
+          friends: passportState.social.friends.map(f => ({
+            src: f.src,
+            file: f.file
+          }))
+        }
+      };
+    }
+
+    async function loadPassportData(data) {
+      // Загружаем фон
+      if (data.background) {
+        try {
+          const img = await loadImage(data.background.src);
+          passportState.background = { ...data.background, img };
+        } catch (e) {
+          console.warn('Не удалось загрузить фон:', data.background.src);
+          passportState.background = null;
+        }
+      } else {
+        passportState.background = null;
+      }
+      
+      // Загружаем рамку
+      if (data.frame) {
+        if (data.frame.isComposite && data.frame.backSrc && data.frame.coverSrc) {
+          try {
+            const backImg = await loadImage(data.frame.backSrc);
+            const coverImg = await loadImage(data.frame.coverSrc);
+            passportState.frame = {
+              isComposite: true,
+              back: { img: backImg, src: data.frame.backSrc },
+              cover: { img: coverImg, src: data.frame.coverSrc }
+            };
+          } catch (e) {
+            console.warn('Не удалось загрузить составную рамку');
+            passportState.frame = null;
+          }
+        } else if (data.frame.src) {
+          try {
+            const img = await loadImage(data.frame.src);
+            passportState.frame = { img, src: data.frame.src, file: data.frame.file, category: data.frame.category };
+          } catch (e) {
+            console.warn('Не удалось загрузить рамку:', data.frame.src);
+            passportState.frame = null;
+          }
+        } else {
+          passportState.frame = null;
+        }
+      } else {
+        passportState.frame = null;
+      }
+      
+      // Загружаем баннеры
+      if (data.leftBanner) {
+        try {
+          const img = await loadImage(data.leftBanner.src);
+          passportState.leftBanner = { ...data.leftBanner, img };
+          updateBannerButton('left', data.leftBanner.src);
+        } catch (e) {
+          console.warn('Не удалось загрузить левый баннер');
+          passportState.leftBanner = null;
+        }
+      } else {
+        passportState.leftBanner = null;
+        updateBannerButton('left', 'interface/add_banner.png');
+      }
+      
+      if (data.rightBanner) {
+        try {
+          const img = await loadImage(data.rightBanner.src);
+          passportState.rightBanner = { ...data.rightBanner, img };
+          updateBannerButton('right', data.rightBanner.src);
+        } catch (e) {
+          console.warn('Не удалось загрузить правый баннер');
+          passportState.rightBanner = null;
+        }
+      } else {
+        passportState.rightBanner = null;
+        updateBannerButton('right', 'interface/add_banner.png');
+      }
+      
+      // Загружаем значки
+      if (data.badges) {
+        for (let i = 0; i < Math.min(data.badges.length, 20); i++) {
+          const bData = data.badges[i];
+          if (bData) {
+            try {
+              const img = await loadImage(bData.src);
+              passportState.badges[i] = { ...bData, img };
+              updateBadgeButton('main', i, bData.src);
+            } catch (e) {
+              console.warn(`Не удалось загрузить значок ${i}:`, bData.src);
+              passportState.badges[i] = null;
+              updateBadgeButton('main', i, 'interface/add_badge.png');
+            }
+          } else {
+            passportState.badges[i] = null;
+            updateBadgeButton('main', i, 'interface/add_badge.png');
+          }
+        }
+      }
+      
+      // Загружаем избранные значки
+      if (data.favoriteBadges) {
+        for (let i = 0; i < Math.min(data.favoriteBadges.length, 2); i++) {
+          const bData = data.favoriteBadges[i];
+          if (bData) {
+            try {
+              const img = await loadImage(bData.src);
+              passportState.favoriteBadges[i] = { ...bData, img };
+              updateBadgeButton('favorite', i, bData.src);
+            } catch (e) {
+              console.warn(`Не удалось загрузить избранный значок ${i}:`, bData.src);
+              passportState.favoriteBadges[i] = null;
+              updateBadgeButton('favorite', i, 'interface/add_badge.png');
+            }
+          } else {
+            passportState.favoriteBadges[i] = null;
+            updateBadgeButton('favorite', i, 'interface/add_badge.png');
+          }
+        }
+      }
+      
+      // Загружаем социальные данные
+      if (data.social) {
+        passportState.social.nick = data.social.nick || '';
+        passportState.social.nickColor = data.social.nickColor || '#000000';
+        passportState.social.nickFont = data.social.nickFont || 'sans-serif';
+        passportState.social.nickFontSize = data.social.nickFontSize || 24;
+        passportState.social.date = data.social.date || '';
+        passportState.social.dateColor = data.social.dateColor || '#000000';
+        passportState.social.dateFont = data.social.dateFont || 'sans-serif';
+        passportState.social.dateFontSize = data.social.dateFontSize || 24;
+        passportState.social.about = data.social.about || '';
+        passportState.social.aboutColor = data.social.aboutColor || '#000000';
+        passportState.social.aboutFont = data.social.aboutFont || 'sans-serif';
+        passportState.social.aboutFontSize = data.social.aboutFontSize || 24;
+        
+        // Загружаем аватар
+        if (data.social.avatar) {
+          try {
+            const img = await loadImage(data.social.avatar.src);
+            passportState.social.avatar = { ...data.social.avatar, img };
+          } catch (e) {
+            console.warn('Не удалось загрузить аватар');
+            passportState.social.avatar = null;
+          }
+        } else {
+          passportState.social.avatar = null;
+        }
+        
+        // Загружаем друзей
+        passportState.social.friends = [];
+        if (data.social.friends) {
+          for (const fData of data.social.friends) {
+            try {
+              const img = await loadImage(fData.src);
+              passportState.social.friends.push({ ...fData, img });
+            } catch (e) {
+              console.warn('Не удалось загрузить друга:', fData.src);
+            }
+          }
+        }
+      }
+      
+      // Обновляем интерфейс
+      renderBadgesSlots();
+      createBannerButtons();
+      
+      // Обновляем текстовые поля
+      if (nickInput) nickInput.value = passportState.social.nick;
+      if (dateInput) dateInput.value = passportState.social.date;
+      if (aboutInput) aboutInput.value = passportState.social.about;
+      if (nickColor) nickColor.value = passportState.social.nickColor;
+      if (dateColor) dateColor.value = passportState.social.dateColor;
+      if (aboutColor) aboutColor.value = passportState.social.aboutColor;
+      if (nickSizeInput) nickSizeInput.value = passportState.social.nickFontSize;
+      if (dateSizeInput) dateSizeInput.value = passportState.social.dateFontSize;
+      if (aboutSizeInput) aboutSizeInput.value = passportState.social.aboutFontSize;
+      
+      drawPreview();
+      showToast('Паспорт загружен!');
+    }
+
     document.getElementById('switch-to-main').addEventListener('click', () => {
       badgeMode = 'main';
       document.getElementById('switch-to-main').classList.add('active');
@@ -2720,47 +3339,33 @@
     selectedSlotIndicator.style.display = 'none';
     selectedBannerIndicator.style.display = 'none';
 
-    // ========== EMOJI PICKER (полные массивы из вашего исходного файла) ==========
+    // ========== EMOJI PICKER ==========
     const emojiCategoriesData = {
       '😊 Смайлики': [
-        // Смайлики (лица)
         '😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '☺', '😚', '😙', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '🤥', '😌', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '🥴', '😵', '🤯', '🤠', '🥳', '😎', '🤓', '🧐', '😕', '😟', '🙁', '☹', '😮', '😯', '😲', '😳', '🥺', '😦', '😧', '😨', '😰', '😥', '😢', '😭', '😱', '😖', '😣', '😞', '😓', '😩', '😫', '😤', '😡', '😠', '🤬', '😈', '👿', '💀', '☠', '💩', '🤡', '👹', '👺', '👻', '👽', '👾', '🤖', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾', '🙈', '🙉', '🙊',
-        // Эмоции
         '💋', '💌', '💘', '💝', '💖', '💗', '💓', '💞', '💕', '💟', '❣', '💔', '❤', '🧡', '💛', '💚', '💙', '💜', '🖤', '💯', '💢', '💥', '💫', '💦', '💨', '🕳', '💣', '💬', '👁️‍🗨️', '🗨', '🗯', '💭', '💤',
-        // Животные
         '🐵', '🐒', '🦍', '🐶', '🐕', '🐩', '🐺', '🦊', '🦝', '🐱', '🐈', '🦁', '🐯', '🐅', '🐆', '🐴', '🐎', '🦄', '🦓', '🦌', '🐮', '🐂', '🐃', '🐄', '🐷', '🐖', '🐗', '🐽', '🐏', '🐑', '🐐', '🐪', '🐫', '🦙', '🦒', '🐘', '🦏', '🦛', '🐭', '🐁', '🐀', '🐹', '🐰', '🐇', '🐿', '🦔', '🦇', '🐻', '🐨', '🐼', '🦘', '🦡', '🐾', '🦃', '🐔', '🐓', '🐣', '🐤', '🐥', '🐦', '🐧', '🕊', '🦅', '🦆', '🦢', '🦉', '🦚', '🦜', '🐸', '🐊', '🐢', '🦎', '🐍', '🐲', '🐉', '🦕', '🦖', '🐳', '🐋', '🐬', '🐟', '🐠', '🐡', '🦈', '🐙', '🐚', '🐌', '🦋', '🐛', '🐜', '🐝', '🐞', '🦗', '🕷', '🕸', '🦂', '🦟', '🦠'
       ],
-    
       '👨 Люди': [
         '👋', '🤚', '🖐', '✋', '🖖', '👌', '✌', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '🖕', '👇', '☝', '👍', '👎', '✊', '👊', '🤛', '🤜', '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍', '💅', '🤳', '💪', '🦵', '🦶', '👂', '👃', '🧠', '🦷', '🦴', '👀', '👁', '👅', '👄', '👶', '🧒', '👦', '👧', '🧑', '👱', '👨', '👱‍♂️', '👨‍🦰', '👨‍🦱', '👨‍🦳', '👨‍🦲', '🧔', '👩', '👱‍♀️', '👩‍🦰', '👩‍🦱', '👩‍🦳', '👩‍🦲', '🧓', '👴', '👵', '🙍', '🙍‍♂️', '🙍‍♀️', '🙎', '🙎‍♂️', '🙎‍♀️', '🙅', '🙅‍♂️', '🙅‍♀️', '🙆', '🙆‍♂️', '🙆‍♀️', '💁', '💁‍♂️', '💁‍♀️', '🙋', '🙋‍♂️', '🙋‍♀️', '🙇', '🙇‍♂️', '🙇‍♀️', '🤦', '🤦‍♂️', '🤦‍♀️', '🤷', '🤷‍♂️', '🤷‍♀️', '👨‍⚕️', '👩‍⚕️', '👨‍🎓', '👩‍🎓', '👨‍🏫', '👩‍🏫', '👨‍⚖️', '👩‍⚖️', '👨‍🌾', '👩‍🌾', '👨‍🍳', '👩‍🍳', '👨‍🔧', '👩‍🔧', '👨‍🏭', '👩‍🏭', '👨‍💼', '👩‍💼', '👨‍🔬', '👩‍🔬', '👨‍💻', '👩‍💻', '👨‍🎤', '👩‍🎤', '👨‍🎨', '👩‍🎨', '👨‍✈️', '👩‍✈️', '👨‍🚀', '👩‍🚀', '👨‍🚒', '👩‍🚒', '👮', '👮‍♂️', '👮‍♀️', '🕵', '🕵️‍♂️', '🕵️‍♀️', '💂', '💂‍♂️', '💂‍♀️', '👷', '👷‍♂️', '👷‍♀️', '🤴', '👸', '👳', '👳‍♂️', '👳‍♀️', '👲', '🧕', '🤵', '👰', '🤰', '🤱', '👼', '🎅', '🤶', '🦸', '🦸‍♂️', '🦸‍♀️', '🦹', '🦹‍♂️', '🦹‍♀️', '🧙', '🧙‍♂️', '🧙‍♀️', '🧚', '🧚‍♂️', '🧚‍♀️', '🧛', '🧛‍♂️', '🧛‍♀️', '🧜', '🧜‍♂️', '🧜‍♀️', '🧝', '🧝‍♂️', '🧝‍♀️', '🧞', '🧞‍♂️', '🧞‍♀️', '🧟', '🧟‍♂️', '🧟‍♀️', '💆', '💆‍♂️', '💆‍♀️', '💇', '💇‍♂️', '💇‍♀️', '🚶', '🚶‍♂️', '🚶‍♀️', '🏃', '🏃‍♂️', '🏃‍♀️', '💃', '🕺', '🕴', '👯', '👯‍♂️', '👯‍♀️', '🧖', '🧖‍♂️', '🧖‍♀️', '🧗', '🧗‍♂️', '🧗‍♀️', '🤺', '🏇', '⛷', '🏂', '🏌', '🏌️‍♂️', '🏌️‍♀️', '🏄', '🏄‍♂️', '🏄‍♀️', '🚣', '🚣‍♂️', '🚣‍♀️', '🏊', '🏊‍♂️', '🏊‍♀️', '⛹', '⛹️‍♂️', '⛹️‍♀️', '🏋', '🏋️‍♂️', '🏋️‍♀️', '🚴', '🚴‍♂️', '🚴‍♀️', '🚵', '🚵‍♂️', '🚵‍♀️', '🤸', '🤸‍♂️', '🤸‍♀️', '🤼', '🤼‍♂️', '🤼‍♀️', '🤽', '🤽‍♂️', '🤽‍♀️', '🤾', '🤾‍♂️', '🤾‍♀️', '🤹', '🤹‍♂️', '🤹‍♀️', '🧘', '🧘‍♂️', '🧘‍♀️', '🛀', '🛌', '👭', '👫', '👬', '💏', '👩‍❤️‍💋‍👨', '👨‍❤️‍💋‍👨', '👩‍❤️‍💋‍👩', '💑', '👩‍❤️‍👨', '👨‍❤️‍👨', '👩‍❤️‍👩', '👪', '👨‍👩‍👦', '👨‍👩‍👧', '👨‍👩‍👧‍👦', '👨‍👩‍👦‍👦', '👨‍👩‍👧‍👧', '👨‍👨‍👦', '👨‍👨‍👧', '👨‍👨‍👧‍👦', '👨‍👨‍👦‍👦', '👨‍👨‍👧‍👧', '👩‍👩‍👦', '👩‍👩‍👧', '👩‍👩‍👧‍👦', '👩‍👩‍👦‍👦', '👩‍👩‍👧‍👧', '👨‍👦', '👨‍👦‍👦', '👨‍👧', '👨‍👧‍👦', '👨‍👧‍👧', '👩‍👦', '👩‍👦‍👦', '👩‍👧', '👩‍👧‍👦', '👩‍👧‍👧', '🗣', '👤', '👥'
       ],
-    
       '🎈 Праздники и объекты': [
-        // Мероприятия и праздники
         '🎃', '🎄', '🎆', '🎇', '🧨', '✨', '🎈', '🎉', '🎊', '🎋', '🎍', '🎎', '🎏', '🎐', '🎑', '🧧', '🎀', '🎁', '🎗', '🎟', '🎫', '🎖', '🏆', '🏅', '🥇', '🥈', '🥉', '⚽', '⚾', '🥎', '🏀', '🏐', '🏈', '🏉', '🎾', '🥏', '🎳', '🏏', '🏑', '🏒', '🥍', '🏓', '🏸', '🥊', '🥋', '🥅', '⛳', '⛸', '🎣', '🎽', '🎿', '🛷', '🥌', '🎯', '🎱', '🔮', '🧿', '🎮', '🕹', '🎰', '🎲', '🧩', '🧸', '♠', '♥', '♦', '♣', '♟', '🃏', '🀄', '🎴', '🎭', '🖼', '🎨', '🧵', '🧶',
-        // Объекты и вещи
         '👓', '🕶', '🥽', '🥼', '👔', '👕', '👖', '🧣', '🧤', '🧥', '🧦', '👗', '👘', '👙', '👚', '👛', '👜', '👝', '🛍', '🎒', '👞', '👟', '🥾', '🥿', '👠', '👡', '👢', '👑', '👒', '🎩', '🎓', '🧢', '⛑', '📿', '💄', '💍', '💎', '🔇', '🔈', '🔉', '🔊', '📢', '📣', '📯', '🔔', '🔕', '🎼', '🎵', '🎶', '🎙', '🎚', '🎛', '🎤', '🎧', '📻', '🎷', '🎸', '🎹', '🎺', '🎻', '🥁', '📱', '📲', '☎', '📞', '📟', '📠', '🔋', '🔌', '💻', '🖥', '🖨', '⌨', '🖱', '🖲', '💽', '💾', '💿', '📀', '🧮', '🎥', '🎞', '📽', '🎬', '📺', '📷', '📸', '📹', '📼', '🔍', '🔎', '🕯', '💡', '🔦', '🏮', '📔', '📕', '📖', '📗', '📘', '📙', '📚', '📓', '📒', '📃', '📜', '📄', '📰', '🗞', '📑', '🔖', '🏷', '💰', '💴', '💵', '💶', '💷', '💸', '💳', '🧾', '💹', '💱', '💲', '✉', '📧', '📨', '📩', '📤', '📥', '📦', '📫', '📪', '📬', '📭', '📮', '🗳', '✏', '✒', '🖋', '🖊', '🖌', '🖍', '📝', '💼', '📁', '📂', '🗂', '📅', '📆', '🗒', '🗓', '📇', '📈', '📉', '📊', '📋', '📌', '📍', '📎', '🖇', '📏', '📐', '✂', '🗃', '🗄', '🗑', '🔒', '🔓', '🔏', '🔐', '🔑', '🗝', '🔨', '⛏', '⚒', '🛠', '🗡', '⚔', '🔫', '🏹', '🛡', '🔧', '🔩', '⚙', '🗜', '⚖', '🔗', '⛓', '🧰', '🧲', '⚗', '🧪', '🧫', '🧬', '🔬', '🔭', '📡', '💉', '💊', '🚪', '🛏', '🛋', '🚽', '🚿', '🛁', '🧴', '🧷', '🧹', '🧺', '🧻', '🧼', '🧽', '🧯', '🛒', '🚬', '⚰', '⚱', '🗿'
       ],
-    
       '🍕 Еда и растения': [
-        // Еда и напитки
         '🍇', '🍈', '🍉', '🍊', '🍋', '🍌', '🍍', '🥭', '🍎', '🍏', '🍐', '🍑', '🍒', '🍓', '🥝', '🍅', '🥥', '🥑', '🍆', '🥔', '🥕', '🌽', '🌶', '🥒', '🥬', '🥦', '🍄', '🥜', '🌰', '🍞', '🥐', '🥖', '🥨', '🥯', '🥞', '🧀', '🍖', '🍗', '🥩', '🥓', '🍔', '🍟', '🍕', '🌭', '🥪', '🌮', '🌯', '🥙', '🥚', '🍳', '🥘', '🍲', '🥣', '🥗', '🍿', '🧂', '🥫', '🍱', '🍘', '🍙', '🍚', '🍛', '🍜', '🍝', '🍠', '🍢', '🍣', '🍤', '🍥', '🥮', '🍡', '🥟', '🥠', '🥡', '🦀', '🦞', '🦐', '🦑', '🍦', '🍧', '🍨', '🍩', '🍪', '🎂', '🍰', '🧁', '🥧', '🍫', '🍬', '🍭', '🍮', '🍯', '🍼', '🥛', '☕', '🍵', '🍶', '🍾', '🍷', '🍸', '🍹', '🍺', '🍻', '🥂', '🥃', '🥤', '🥢', '🍽', '🍴', '🥄', '🔪', '🏺',
-        // Природа (растения)
         '💐', '🌸', '💮', '🏵', '🌹', '🥀', '🌺', '🌻', '🌼', '🌷', '🌱', '🌲', '🌳', '🌴', '🌵', '🌾', '🌿', '☘', '🍀', '🍁', '🍂', '🍃'
       ],
-    
       '🚗 Транспорт и места': [
         '🌍', '🌎', '🌏', '🌐', '🗺', '🗾', '🧭', '🏔', '⛰', '🌋', '🗻', '🏕', '🏖', '🏜', '🏝', '🏞', '🏟', '🏛', '🏗', '🧱', '🏘', '🏚', '🏠', '🏡', '🏢', '🏣', '🏤', '🏥', '🏦', '🏨', '🏩', '🏪', '🏫', '🏬', '🏭', '🏯', '🏰', '💒', '🗼', '🗽', '⛪', '🕌', '🕍', '⛩', '🕋', '⛲', '⛺', '🌁', '🌃', '🏙', '🌄', '🌅', '🌆', '🌇', '🌉', '♨', '🌌', '🎠', '🎡', '🎢', '💈', '🎪', '🚂', '🚃', '🚄', '🚅', '🚆', '🚇', '🚈', '🚉', '🚊', '🚝', '🚞', '🚋', '🚌', '🚍', '🚎', '🚐', '🚑', '🚒', '🚓', '🚔', '🚕', '🚖', '🚗', '🚘', '🚙', '🚚', '🚛', '🚜', '🏎', '🏍', '🛵', '🚲', '🛴', '🛹', '🚏', '🛣', '🛤', '🛢', '⛽', '🚨', '🚥', '🚦', '🛑', '🚧', '⚓', '⛵', '🛶', '🚤', '🛳', '⛴', '🛥', '🚢', '✈', '🛩', '🛫', '🛬', '💺', '🚁', '🚟', '🚠', '🚡', '🛰', '🚀', '🛸', '🛎', '🧳', '⌛', '⏳', '⌚', '⏰', '⏱', '⏲', '🕰', '🕛', '🕧', '🕐', '🕜', '🕑', '🕝', '🕒', '🕞', '🕓', '🕟', '🕔', '🕠', '🕕', '🕡', '🕖', '🕢', '🕗', '🕣', '🕘', '🕤', '🕙', '🕥', '🕚', '🕦', '🌑', '🌒', '🌓', '🌔', '🌕', '🌖', '🌗', '🌘', '🌙', '🌚', '🌛', '🌜', '🌡', '☀', '🌝', '🌞', '⭐', '🌟', '🌠', '☁', '⛅', '⛈', '🌤', '🌥', '🌦', '🌧', '🌨', '🌩', '🌪', '🌫', '🌬', '🌀', '🌈', '🌂', '☂', '☔', '⛱', '⚡', '❄', '☃', '⛄', '☄', '🔥', '💧', '🌊'
       ],
-    
       '💗 Символы': [
-        // Символы
         '🏧', '🚮', '🚰', '♿', '🚹', '🚺', '🚻', '🚼', '🚾', '🛂', '🛃', '🛄', '🛅', '⚠', '🚸', '⛔', '🚫', '🚳', '🚭', '🚯', '🚱', '🚷', '📵', '🔞', '☢', '☣', '⬆', '↗', '➡', '↘', '⬇', '↙', '⬅', '↖', '↕', '↔', '↩', '↪', '⤴', '⤵', '🔃', '🔄', '🔙', '🔚', '🔛', '🔜', '🔝', '🛐', '⚛', '🕉', '✡', '☸', '☯', '✝', '☦', '☪', '☮', '🕎', '🔯', '♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓', '⛎', '🔀', '🔁', '🔂', '▶', '⏩', '⏭', '⏯', '◀', '⏪', '⏮', '🔼', '⏫', '🔽', '⏬', '⏸', '⏹', '⏺', '⏏', '🎦', '🔅', '🔆', '📶', '📳', '📴', '♀', '♂', '⚕', '♾', '♻', '⚜', '🔱', '📛', '🔰', '⭕', '✅', '☑', '✔', '✖', '❌', '❎', '➕', '➖', '➗', '➰', '➿', '〽', '✳', '✴', '❇', '‼', '⁉', '❓', '❔', '❕', '❗', '〰', '©', '®', '™', '#️⃣', '*️⃣', '0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟', '🔠', '🔡', '🔢', '🔣', '🔤', '🅰', '🆎', '🅱', '🆑', '🆒', '🆓', 'ℹ', '🆔', 'Ⓜ', '🆕', '🆖', '🅾', '🆗', '🅿', '🆘', '🆙', '🆚', '🈁', '🈂', '🈷', '🈶', '🈯', '🉐', '🈹', '🈚', '🈲', '🉑', '🈸', '🈴', '🈳', '㊗', '㊙', '🈺', '🈵', '🔴', '🔵', '⚪', '⚫', '⬜', '⬛', '◼', '◻', '◽', '◾', '▫', '▪', '🔶', '🔷', '🔸', '🔹', '🔺', '🔻', '💠', '🔘', '🔲', '🔳',
-        // Флаги
         '🏁', '🚩', '🎌', '🏴', '🏳', '🏳️‍🌈', '🏴‍☠️'
       ]
     };
-	
+    
     function buildEmojiPicker() {
       emojiCategories.innerHTML = '';
       let first = true;
@@ -2839,6 +3444,42 @@
 
     document.getElementById('save-fixed-btn').addEventListener('click', saveFullSize);
 
+    // Сохранение .passport
+    document.getElementById('save-passport-btn').addEventListener('click', () => {
+      const data = getPassportData();
+      const json = JSON.stringify(data, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `passport-${new Date().toISOString().slice(0,10)}.passport`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+
+    // Загрузка .passport
+    document.getElementById('load-passport-btn').addEventListener('click', () => {
+      document.getElementById('passport-file-input').click();
+    });
+
+    document.getElementById('passport-file-input').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        await loadPassportData(data);
+      } catch (err) {
+        console.error('Ошибка загрузки .passport:', err);
+        alert('Не удалось загрузить файл .passport. Проверьте формат.');
+      }
+      
+      e.target.value = '';
+    });
+
     (async () => {
       try {
         const defaultBgSrc = 'backgrounds/all/1.png';
@@ -2861,6 +3502,14 @@
         toast.remove();
       }, 2000);
     }
+
+    // Инициализация: скрываем поиск, если изначально выбрана социальная вкладка
+    if (currentGroup === 'social') {
+      document.querySelector('.search-container').style.display = 'none';
+    }
+
+    // Инициализация кэша поиска
+    buildSearchCache();
 
     updateChecklist();
   })();
