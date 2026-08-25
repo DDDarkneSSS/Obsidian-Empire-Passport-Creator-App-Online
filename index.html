@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <link rel="icon" href="/Obsidian-Empire-Passport-Creator-App-Online/icon.png" type="image/x-icon">
+  <link rel="icon" href="/icon.ico" type="image/x-icon">
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Obsidian Empire Passport Creator</title>
@@ -828,20 +828,80 @@
       resize: none;
     }
 
-    .copy-toast {
+    /* ===== КАСТОМНЫЙ TOAST ===== */
+    .custom-toast-container {
       position: fixed;
-      bottom: 20px;
+      top: 20px;
       left: 50%;
       transform: translateX(-50%);
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      pointer-events: none;
+      max-width: 90%;
+      width: 500px;
+    }
+    .custom-toast {
       background: #333;
       color: #fff;
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-size: 14px;
-      z-index: 10000;
-      opacity: 0.9;
-      pointer-events: none;
-      transition: opacity 0.3s;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 500;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+      opacity: 0;
+      transform: translateY(-20px) scale(0.95);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      pointer-events: auto;
+      width: 100%;
+      text-align: center;
+      backdrop-filter: blur(4px);
+      background: rgba(30, 30, 40, 0.92);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .custom-toast.show {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    .custom-toast.success {
+      border-left: 4px solid #4caf50;
+    }
+    .custom-toast.error {
+      border-left: 4px solid #f44336;
+    }
+    .custom-toast.warning {
+      border-left: 4px solid #ff9800;
+    }
+    .custom-toast.info {
+      border-left: 4px solid #2196f3;
+    }
+    .custom-toast .toast-close {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.6);
+      font-size: 20px;
+      cursor: pointer;
+      pointer-events: auto;
+      padding: 0 4px;
+      line-height: 1;
+    }
+    .custom-toast .toast-close:hover {
+      color: #fff;
+    }
+    .custom-toast-wrapper {
+      position: relative;
+      padding-right: 30px;
+    }
+
+    /* старый toast убираем */
+    .copy-toast {
+      display: none;
     }
 
     .avatar-placeholder {
@@ -958,6 +1018,9 @@
   <div class="emoji-grid" id="emojiGrid"></div>
 </div>
 
+<!-- КОНТЕЙНЕР ДЛЯ КАСТОМНЫХ TOAST -->
+<div class="custom-toast-container" id="toastContainer"></div>
+
 <script>
   (async function() {
     // ========== ЗАГРУЗКА ЛОКАЛИЗАЦИИ ==========
@@ -978,6 +1041,78 @@
     }
 
     await loadLocalization();
+
+// ========== КАСТОМНЫЙ TOAST ==========
+const toastContainer = document.getElementById('toastContainer');
+let toastTimeout = null;
+let toastQueue = [];
+
+function showToast(message, type = 'info', duration = 3000) {
+  // Убираем старые тосты
+  const existingToasts = toastContainer.querySelectorAll('.custom-toast');
+  existingToasts.forEach(t => t.remove());
+
+  const toast = document.createElement('div');
+  toast.className = `custom-toast ${type}`;
+  
+  const wrapper = document.createElement('div');
+  wrapper.className = 'custom-toast-wrapper';
+  
+  const text = document.createElement('span');
+  text.textContent = message;
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'toast-close';
+  closeBtn.innerHTML = '×';
+  closeBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    hideToast(toast);
+  });
+  
+  wrapper.appendChild(text);
+  wrapper.appendChild(closeBtn);
+  toast.appendChild(wrapper);
+  
+  toastContainer.appendChild(toast);
+  
+  // Анимация появления
+  requestAnimationFrame(() => {
+    toast.classList.add('show');
+  });
+  
+  // Авто-скрытие
+  if (duration > 0) {
+    setTimeout(() => {
+      hideToast(toast);
+    }, duration);
+  }
+}
+
+function hideToast(toast) {
+  if (!toast || !toast.parentNode) return;
+  toast.classList.remove('show');
+  setTimeout(() => {
+    if (toast.parentNode) toast.remove();
+  }, 300);
+}
+
+// ===== ПОЛНАЯ ЗАМЕНА alert И confirm =====
+// Переопределяем alert - теперь показывает тост вместо блокирующего окна
+window.alert = function(message) {
+  showToast(String(message), 'warning', 4000);
+};
+
+// Переопределяем confirm - теперь показывает тост и возвращает false
+window.confirm = function(message) {
+  showToast(String(message) + ' (подтверждение отменено)', 'info', 3000);
+  return false;
+};
+
+// Также переопределяем prompt (на всякий случай)
+window.prompt = function(message, defaultValue) {
+  showToast('Функция prompt заменена на toast. Значение: ' + (defaultValue || ''), 'info', 3000);
+  return defaultValue || '';
+};
 
 // ========== УПРАВЛЕНИЕ ТЕМАМИ И ФОНОМ СЛОТОВ (С СОХРАНЕНИЕМ В localStorage) ==========
 const body = document.body;
@@ -1002,16 +1137,13 @@ function darkenColor(hex, factor = 0.7) {
 }
 
 function resetToDefaultColors() {
-  // Сбрасываем акцентный цвет
   colorPicker.value = DEFAULT_ACCENT_COLOR;
   document.documentElement.style.setProperty('--accent-color', DEFAULT_ACCENT_COLOR);
   document.documentElement.style.setProperty('--accent-dark', darkenColor(DEFAULT_ACCENT_COLOR));
   
-  // Сбрасываем фон слотов
   slotBgPicker.value = DEFAULT_SLOT_BG;
   document.documentElement.style.setProperty('--slot-bg', DEFAULT_SLOT_BG);
   
-  // Сохраняем в localStorage
   try {
     localStorage.setItem('passport-accent-color', DEFAULT_ACCENT_COLOR);
     localStorage.setItem('passport-slot-bg', DEFAULT_SLOT_BG);
@@ -1019,8 +1151,7 @@ function resetToDefaultColors() {
     console.warn('Не удалось сохранить цвета:', e);
   }
   
-  // Показываем уведомление
-  showToast('🎨 Палитра сброшена к стандартной');
+  showToast('🎨 Палитра сброшена к стандартной', 'info', 2500);
 }
 
 function setActiveTheme(theme) {
@@ -1035,7 +1166,6 @@ function setActiveTheme(theme) {
   }
 }
 
-// Восстанавливаем сохранённую тему
 try {
   const savedTheme = localStorage.getItem('passport-theme') || 'light';
   setActiveTheme(savedTheme);
@@ -1050,7 +1180,6 @@ darkBtn.addEventListener('click', () => setActiveTheme('dark'));
 function updateAccentColor(color) {
   document.documentElement.style.setProperty('--accent-color', color);
   document.documentElement.style.setProperty('--accent-dark', darkenColor(color));
-  // Обновляем фон слотов, если он не был изменён пользователем отдельно
   if (!localStorage.getItem('passport-slot-bg') || localStorage.getItem('passport-slot-bg') === slotBgPicker.value) {
     slotBgPicker.value = darkenColor(color);
     document.documentElement.style.setProperty('--slot-bg', darkenColor(color));
@@ -1062,7 +1191,6 @@ function updateAccentColor(color) {
   }
 }
 
-// Восстанавливаем сохранённый акцентный цвет
 try {
   const savedColor = localStorage.getItem('passport-accent-color');
   if (savedColor) {
@@ -1080,14 +1208,12 @@ colorPicker.addEventListener('input', (e) => {
   updateAccentColor(e.target.value);
 });
 
-// Восстанавливаем сохранённый фон слотов
 try {
   const savedSlotBg = localStorage.getItem('passport-slot-bg');
   if (savedSlotBg) {
     slotBgPicker.value = savedSlotBg;
     document.documentElement.style.setProperty('--slot-bg', savedSlotBg);
   } else {
-    // Если не сохранён, используем стандартный
     slotBgPicker.value = DEFAULT_SLOT_BG;
     document.documentElement.style.setProperty('--slot-bg', DEFAULT_SLOT_BG);
   }
@@ -1107,10 +1233,8 @@ slotBgPicker.addEventListener('input', (e) => {
   }
 });
 
-// Кнопка сброса - сбрасывает всё к стандартной оранжевой палитре
 slotBgReset.addEventListener('click', resetToDefaultColors);
 
-// Если нет сохранённых настроек, устанавливаем стандартные
 if (!localStorage.getItem('passport-accent-color')) {
   colorPicker.value = DEFAULT_ACCENT_COLOR;
   document.documentElement.style.setProperty('--accent-color', DEFAULT_ACCENT_COLOR);
@@ -2154,7 +2278,7 @@ if (!localStorage.getItem('passport-slot-bg')) {
 
     function wrapSelectedText(input, before, after) {
       if (!input) {
-        alert('Сначала установите курсор в текстовое поле');
+        showToast('Сначала установите курсор в текстовое поле', 'warning', 3000);
         return;
       }
       const start = input.selectionStart;
@@ -2512,7 +2636,7 @@ if (!localStorage.getItem('passport-slot-bg')) {
             const baseName = file.name.replace(/\.[^/.]+$/, "");
             const familyName = baseName.replace(/[^a-zA-Z0-9 -]/g, '');
             if (!familyName) {
-              alert(`Не удалось создать корректное имя для шрифта "${file.name}"`);
+              showToast(`Не удалось создать корректное имя для шрифта "${file.name}"`, 'error', 3000);
               continue;
             }
             const fontFace = new FontFace(familyName, buffer);
@@ -2521,10 +2645,10 @@ if (!localStorage.getItem('passport-slot-bg')) {
             if (!customFonts.includes(familyName)) {
               customFonts.push(familyName);
             }
-            showToast(`Шрифт "${familyName}" загружен`);
+            showToast(`Шрифт "${familyName}" загружен`, 'success', 2500);
           } catch (err) {
             console.error(err);
-            alert(`Ошибка загрузки шрифта "${file.name}"`);
+            showToast(`Ошибка загрузки шрифта "${file.name}"`, 'error', 3000);
           }
         }
         refreshFontSelects();
@@ -2628,14 +2752,14 @@ if (!localStorage.getItem('passport-slot-bg')) {
         if (group === 'badges') {
           if (badgeMode === 'main') {
             if (selectedMainSlot === -1) {
-              alert('Сначала выберите слот для основного бейджа в сетке!');
+              showToast('Сначала выберите слот для основного бейджа в сетке!', 'warning', 3000);
               return;
             }
             passportState.badges[selectedMainSlot] = null;
             updateBadgeButton('main', selectedMainSlot, 'interface/add_badge.png');
           } else {
             if (selectedFavoriteSlot === -1) {
-              alert('Сначала выберите слот для избранного бейджа!');
+              showToast('Сначала выберите слот для избранного бейджа!', 'warning', 3000);
               return;
             }
             passportState.favoriteBadges[selectedFavoriteSlot] = null;
@@ -2646,7 +2770,7 @@ if (!localStorage.getItem('passport-slot-bg')) {
         }
         if (group === 'banners') {
           if (!selectedBannerSide_) {
-            alert('Сначала выберите место для баннера (левый или правый)!');
+            showToast('Сначала выберите место для баннера!', 'warning', 3000);
             return;
           }
           if (selectedBannerSide_ === 'left') {
@@ -2675,7 +2799,7 @@ if (!localStorage.getItem('passport-slot-bg')) {
       if (group === 'badges') {
         if (badgeMode === 'main') {
           if (selectedMainSlot === -1) {
-            alert('Сначала выберите слот для основного бейджа в сетке!');
+            showToast('Сначала выберите слот для основного значка в сетке!', 'warning', 3000);
             return;
           }
           const img = await loadImage(src);
@@ -2683,7 +2807,7 @@ if (!localStorage.getItem('passport-slot-bg')) {
           updateBadgeButton('main', selectedMainSlot, src);
         } else {
           if (selectedFavoriteSlot === -1) {
-            alert('Сначала выберите слот для избранного бейджа!');
+            showToast('Сначала выберите слот для избранного значка!', 'warning', 3000);
             return;
           }
           const img = await loadImage(src);
@@ -2696,7 +2820,7 @@ if (!localStorage.getItem('passport-slot-bg')) {
 
       if (group === 'banners') {
         if (!selectedBannerSide_) {
-          alert('Сначала выберите место для баннера (левый или правый)!');
+          showToast('Сначала выберите место для баннера!', 'warning', 3000);
           return;
         }
         const img = await loadImage(src);
@@ -2737,7 +2861,7 @@ if (!localStorage.getItem('passport-slot-bg')) {
             };
           } catch (e) {
             console.error('Failed to load composite frame parts', e);
-            alert('Не удалось загрузить составные части рамки');
+            showToast('Не удалось загрузить составные части рамки', 'error', 3000);
             return;
           }
         } else {
@@ -2910,7 +3034,7 @@ if (!localStorage.getItem('passport-slot-bg')) {
         }, 'image/png', 1.0);
       } catch (error) {
         console.error('Ошибка при сохранении:', error);
-        alert('Ошибка при загрузке изображений. Проверьте консоль.');
+        showToast('Ошибка при загрузке изображений. Проверьте консоль.', 'error', 4000);
       }
     }
 
@@ -3312,7 +3436,7 @@ if (!localStorage.getItem('passport-slot-bg')) {
       if (aboutSizeInput) aboutSizeInput.value = passportState.social.aboutFontSize;
       
       drawPreview();
-      showToast('Паспорт загружен!');
+      showToast('Паспорт загружен!', 'success', 2500);
     }
 
     document.getElementById('switch-to-main').addEventListener('click', () => {
@@ -3474,7 +3598,7 @@ if (!localStorage.getItem('passport-slot-bg')) {
         await loadPassportData(data);
       } catch (err) {
         console.error('Ошибка загрузки .passport:', err);
-        alert('Не удалось загрузить файл .passport. Проверьте формат.');
+        showToast('Не удалось загрузить файл .passport. Проверьте формат.', 'error', 4000);
       }
       
       e.target.value = '';
@@ -3493,16 +3617,6 @@ if (!localStorage.getItem('passport-slot-bg')) {
 
     buildEmojiPicker();
 
-    function showToast(message) {
-      const toast = document.createElement('div');
-      toast.className = 'copy-toast';
-      toast.textContent = message;
-      document.body.appendChild(toast);
-      setTimeout(() => {
-        toast.remove();
-      }, 2000);
-    }
-
     // Инициализация: скрываем поиск, если изначально выбрана социальная вкладка
     if (currentGroup === 'social') {
       document.querySelector('.search-container').style.display = 'none';
@@ -3512,6 +3626,9 @@ if (!localStorage.getItem('passport-slot-bg')) {
     buildSearchCache();
 
     updateChecklist();
+
+    // Дополнительно: обновляем интерфейс чеклиста при изменении
+    // уже вызывается внутри drawPreview
   })();
 </script>
 </body>
