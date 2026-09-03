@@ -857,15 +857,15 @@
 	.media-item.highlighted {
 	  animation: highlight-pulse 0.8s ease 3;
 	  border: 3px solid var(--accent-color) !important;
-	  box-shadow: 0 0 20px rgba(255, 170, 0, 0.5) !important;
+	  box-shadow: 0 0 20px var(--accent-color) !important;
 	  transform: scale(1.05);
 	  transition: all 0.3s ease;
 	}
 
 	@keyframes highlight-pulse {
-	  0% { box-shadow: 0 0 0 0 rgba(255, 170, 0, 0.7); }
-	  50% { box-shadow: 0 0 30px 10px rgba(255, 170, 0, 0.3); }
-	  100% { box-shadow: 0 0 0 0 rgba(255, 170, 0, 0); }
+	  0% { box-shadow: 0 0 0 0 var(--accent-color); }
+	  50% { box-shadow: 0 0 30px 10px var(--accent-color); }
+	  100% { box-shadow: 0 0 0 0 var(--accent-color); }
 	}
 
 	.media-item {
@@ -876,7 +876,7 @@
 	/* Для тёмной темы */
 	body.theme-dark .media-item.highlighted {
 	  border-color: var(--accent-color) !important;
-	  box-shadow: 0 0 30px rgba(255, 170, 0, 0.4) !important;
+	  box-shadow: 0 0 30px var(--accent-color) !important;
 	}
 
     /* ===== МОБИЛЬНАЯ АДАПТАЦИЯ ===== */
@@ -1264,39 +1264,93 @@
         }
       } catch (e) { updateAccentColor(DEFAULT_ACCENT_COLOR); }
 
-      colorPicker.addEventListener('input', (e) => updateAccentColor(e.target.value));
+    colorPicker.addEventListener('input', (e) => updateAccentColor(e.target.value));
 
-      try {
+    // ===== 1. Обработка выбора цвета слотов =====
+    function applySlotBgColor(color) {
+        document.documentElement.style.setProperty('--slot-bg', color);
+        try {
+            localStorage.setItem('passport-slot-bg', color);
+        } catch (e) {
+            console.warn(e);
+        }
+    }
+
+    // Событие 'input' срабатывает мгновенно при ЛЮБОМ перетаскивании хекса/ползунка
+    slotBgPicker.addEventListener('input', (e) => {
+        applySlotBgColor(e.target.value);
+        // Отмечаем, что пользователь выбрал кастомный цвет
+        try {
+            localStorage.setItem('passport-slot-bg-custom', 'true');
+        } catch (err) {}
+    });
+
+    // Событие 'change' гарантирует сохранение при закрытии палитры/пипетки
+    slotBgPicker.addEventListener('change', (e) => {
+        applySlotBgColor(e.target.value);
+        try {
+            localStorage.setItem('passport-slot-bg-custom', 'true');
+        } catch (err) {}
+    });
+
+    // ===== 2. Исправленная связь акцентного цвета и цвета слотов =====
+    function updateAccentColor(color) {
+        const darkColor = darkenColor(color);
+        document.documentElement.style.setProperty('--accent-color', color);
+        document.documentElement.style.setProperty('--accent-dark', darkColor);
+    
+        // Если пользователь не переопределял цвет слотов вручную
+        const userHasCustomSlotBg = localStorage.getItem('passport-slot-bg-custom') === 'true';
+        
+        if (!userHasCustomSlotBg) {
+            slotBgPicker.value = darkColor;
+            document.documentElement.style.setProperty('--slot-bg', darkColor);
+            try { 
+                localStorage.setItem('passport-slot-bg', darkColor);
+            } catch (e) { 
+                console.warn(e); 
+            }
+        }
+
+        try { 
+            localStorage.setItem('passport-accent-color', color); 
+        } catch (e) { 
+            console.warn(e); 
+        }
+    }
+
+    // ===== 3. Обновленная логика кнопки сброса =====
+    slotBgReset.addEventListener('click', () => {
+        try {
+            localStorage.removeItem('passport-slot-bg-custom');
+        } catch (e) {}
+        resetToDefaultColors();
+    });
+
+    // ===== Загрузка сохраненных цветов =====
+    try {
         const savedSlotBg = localStorage.getItem('passport-slot-bg');
         if (savedSlotBg) {
-          slotBgPicker.value = savedSlotBg;
-          document.documentElement.style.setProperty('--slot-bg', savedSlotBg);
+            slotBgPicker.value = savedSlotBg;
+            document.documentElement.style.setProperty('--slot-bg', savedSlotBg);
         } else {
-          slotBgPicker.value = DEFAULT_SLOT_BG;
-          document.documentElement.style.setProperty('--slot-bg', DEFAULT_SLOT_BG);
+            slotBgPicker.value = DEFAULT_SLOT_BG;
+            document.documentElement.style.setProperty('--slot-bg', DEFAULT_SLOT_BG);
         }
-      } catch (e) {
+    } catch (e) {
         slotBgPicker.value = DEFAULT_SLOT_BG;
         document.documentElement.style.setProperty('--slot-bg', DEFAULT_SLOT_BG);
-      }
+    }
 
-      slotBgPicker.addEventListener('input', (e) => {
-        const color = e.target.value;
-        document.documentElement.style.setProperty('--slot-bg', color);
-        try { localStorage.setItem('passport-slot-bg', color); } catch (e) { console.warn(e); }
-      });
-
-      slotBgReset.addEventListener('click', resetToDefaultColors);
-
-      if (!localStorage.getItem('passport-accent-color')) {
+    if (!localStorage.getItem('passport-accent-color')) {
         colorPicker.value = DEFAULT_ACCENT_COLOR;
         document.documentElement.style.setProperty('--accent-color', DEFAULT_ACCENT_COLOR);
         document.documentElement.style.setProperty('--accent-dark', darkenColor(DEFAULT_ACCENT_COLOR));
-      }
-      if (!localStorage.getItem('passport-slot-bg')) {
+    }
+    if (!localStorage.getItem('passport-slot-bg')) {
         slotBgPicker.value = DEFAULT_SLOT_BG;
         document.documentElement.style.setProperty('--slot-bg', DEFAULT_SLOT_BG);
-      }
+    }
 
       // ========== ДАННЫЕ ==========
       const data = {
