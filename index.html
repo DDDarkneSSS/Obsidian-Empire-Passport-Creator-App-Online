@@ -157,9 +157,12 @@
       display: flex;
       gap: 16px;
       align-items: flex-start;
+	  justify-content: center;
       flex: 1;
       overflow-x: visible;
-      width: max-content;
+      width: 100%;
+	  max-width: 1400px;
+	  margin: 0 auto;
     }
 
     .left {
@@ -850,110 +853,175 @@
       object-fit: contain;
       margin-right: 8px;
     }
+	/* Подсветка найденного элемента */
+	.media-item.highlighted {
+	  animation: highlight-pulse 0.8s ease 3;
+	  border: 3px solid var(--accent-color) !important;
+	  box-shadow: 0 0 20px rgba(255, 170, 0, 0.5) !important;
+	  transform: scale(1.05);
+	  transition: all 0.3s ease;
+	}
+
+	@keyframes highlight-pulse {
+	  0% { box-shadow: 0 0 0 0 rgba(255, 170, 0, 0.7); }
+	  50% { box-shadow: 0 0 30px 10px rgba(255, 170, 0, 0.3); }
+	  100% { box-shadow: 0 0 0 0 rgba(255, 170, 0, 0); }
+	}
+
+	.media-item {
+	  transition: transform 0.2s, box-shadow 0.2s, border-color 0.3s;
+	  border: 3px solid transparent;
+	}
+
+	/* Для тёмной темы */
+	body.theme-dark .media-item.highlighted {
+	  border-color: var(--accent-color) !important;
+	  box-shadow: 0 0 30px rgba(255, 170, 0, 0.4) !important;
+	}
 
     /* ===== МОБИЛЬНАЯ АДАПТАЦИЯ ===== */
     @media (max-width: 768px) {
-      .layout {
-        flex-direction: column;
-        width: 100%;
-      }
-      .left {
-        min-width: unset;
-        max-width: 100%;
-        width: 100%;
-      }
-      .right-fixed-wrapper {
-        width: 100%;
-      }
-      .preview-frame {
-        width: 100%;
-        height: auto;
-        aspect-ratio: 16 / 9;
-      }
-      #previewCanvas {
-        width: 100%;
-        height: auto;
-        aspect-ratio: 16 / 9;
-      }
-      .grid {
-        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-        gap: 8px;
-      }
-      .media-item .meta {
-        font-size: 10px;
-        white-space: normal;
-        overflow: visible;
-      }
-      .badges-row .badge-btn {
-        width: 70px;
-        height: 70px;
-      }
-      .badges-fav-column .badge-btn {
-        width: 150px;
-        height: 135px;
-      }
-      .badges-fav-column .badge-btn img {
-        width: 135px;
-        height: 135px;
-      }
-      .banner-btn-under {
-        width: 90px;
-        height: 190px;
-      }
-      .buttons-under-preview {
-        overflow-x: auto;
-      }
-      .save-controls {
-        flex-wrap: wrap;
-      }
-      .save-btn {
-        font-size: 11px;
-        padding: 6px 10px;
-      }
-      .header-with-theme {
-        flex-direction: column;
-        align-items: stretch;
-      }
-      .theme-controls {
-        justify-content: center;
-      }
-      h1 {
-        font-size: 16px;
-        text-align: center;
-      }
+        .layout-wrapper {
+            padding: 0 8px;
+        }
+
+        .layout {
+            flex-direction: column;
+            width: 100%;
+            max-width: 100%;
+            margin: 0 auto;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .left {
+            min-width: unset;
+            max-width: 100%;
+            width: 100%;
+        }
+
+        .right-fixed-wrapper {
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .preview-frame {
+            width: 100%;
+            height: auto;
+            aspect-ratio: 16 / 9;
+        }
+
+        #previewCanvas {
+            width: 100%;
+            height: auto;
+            aspect-ratio: 16 / 9;
+        }
+
+        .grid {
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 8px;
+        }
+
+        .media-item .meta {
+            font-size: 10px;
+            white-space: normal;
+            overflow: visible;
+        }
+
+        .badges-row .badge-btn {
+            width: 70px;
+            height: 70px;
+        }
+
+        .badges-fav-column .badge-btn {
+            width: 150px;
+            height: 135px;
+        }
+
+        .badges-fav-column .badge-btn img {
+            width: 135px;
+            height: 135px;
+        }
+
+        .banner-btn-under {
+            width: 90px;
+            height: 190px;
+        }
+
+        .buttons-under-preview {
+            overflow-x: auto;
+        }
+
+        .save-controls {
+            flex-wrap: wrap;
+        }
+
+        .save-btn {
+            font-size: 11px;
+            padding: 6px 10px;
+        }
+
+        .header-with-theme {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .theme-controls {
+            justify-content: center;
+        }
+
+        h1 {
+            font-size: 16px;
+            text-align: center;
+        }
     }
 
     @media (max-width: 480px) {
-      .grid {
-        grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
-        gap: 6px;
-      }
-      .media-item {
-        padding: 4px;
-      }
-      .media-item .meta {
-        font-size: 9px;
-      }
-      .badges-row .badge-btn {
-        width: 55px;
-        height: 55px;
-      }
-      .badges-fav-column .badge-btn {
-        width: 120px;
-        height: 108px;
-      }
-      .badges-fav-column .badge-btn img {
-        width: 108px;
-        height: 108px;
-      }
-      .banner-btn-under {
-        width: 70px;
-        height: 150px;
-      }
-      .group-btn, .tab, .mode-btn {
-        font-size: 12px;
-        padding: 4px 8px;
-      }
+        .layout-wrapper {
+            padding: 0 4px;
+        }
+
+        .layout {
+            gap: 8px;
+        }
+
+        .grid {
+            grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
+            gap: 6px;
+        }
+
+        .media-item {
+            padding: 4px;
+        }
+
+        .media-item .meta {
+            font-size: 9px;
+        }
+
+        .badges-row .badge-btn {
+            width: 55px;
+            height: 55px;
+        }
+
+        .badges-fav-column .badge-btn {
+            width: 120px;
+            height: 108px;
+        }
+
+        .badges-fav-column .badge-btn img {
+            width: 108px;
+            height: 108px;
+        }
+
+        .banner-btn-under {
+            width: 70px;
+            height: 150px;
+        }
+
+        .group-btn, .tab, .mode-btn {
+            font-size: 12px;
+            padding: 4px 8px;
+        }
     }
   </style>
 </head>
@@ -987,57 +1055,59 @@
     </div>
   </div>
 
-  <div class="layout">
-    <div class="left">
-      <div class="groups" role="tablist" aria-label="Groups">
-        <button class="group-btn" data-group="badges" aria-pressed="true">Значки</button>
-        <button class="group-btn" data-group="backgrounds" aria-pressed="false">Фоны</button>
-        <button class="group-btn" data-group="banners" aria-pressed="false">Баннеры</button>
-        <button class="group-btn" data-group="frames" aria-pressed="false">Рамки</button>
-        <button class="group-btn" data-group="social" aria-pressed="false">Социальная</button>
-      </div>
-
-      <div class="search-container">
-        <input type="text" id="search-input" placeholder="🔍 Поиск значков, фонов, баннеров...">
-        <button class="search-clear" id="search-clear">✕</button>
-      </div>
-      <div class="search-results" id="search-results"></div>
-
-      <main id="app"></main>
-
-      <div id="selected-slot-indicator" class="selection-hint" style="display: none;">
-        ✦ Выбран слот для бейджа: <span id="selected-slot-number"></span> <span id="selected-slot-mode"></span>
-      </div>
-
-      <div id="selected-banner-indicator" class="selection-hint banner-hint" style="display: none;">
-        ✦ Выбран <span id="selected-banner-side"></span> баннер
-      </div>
-    </div>
-
-    <div class="right-fixed-wrapper" aria-label="Preview and save">
-      <div class="preview-frame" id="previewFrame">
-        <canvas id="previewCanvas" width="900" height="500"></canvas>
-      </div>
-
-      <div class="save-controls">
-        <button id="save-fixed-btn" class="save-btn primary">Сохранить PNG 1600x900</button>
-        <button id="save-passport-btn" class="save-btn">💾 Сохранить .passport</button>
-        <button id="load-passport-btn" class="save-btn">📂 Загрузить .passport</button>
-        <input type="file" id="passport-file-input" accept=".passport">
-      </div>
-
-      <div class="buttons-under-preview">
-        <div class="badges-grid-under" id="badges-grid-under">
-          <div class="badge-mode-switcher">
-            <button id="switch-to-main" class="mode-btn active" data-mode="main">Значки</button>
-            <button id="switch-to-fav" class="mode-btn" data-mode="favorite">Любимые значки</button>
-          </div>
-          <div id="badges-grid-container"></div>
+  <div class="layout-wrapper">
+    <div class="layout">
+      <div class="left">
+        <div class="groups" role="tablist" aria-label="Groups">
+          <button class="group-btn" data-group="badges" aria-pressed="true">Значки</button>
+          <button class="group-btn" data-group="backgrounds" aria-pressed="false">Фоны</button>
+          <button class="group-btn" data-group="banners" aria-pressed="false">Баннеры</button>
+          <button class="group-btn" data-group="frames" aria-pressed="false">Рамки</button>
+          <button class="group-btn" data-group="social" aria-pressed="false">Социальная</button>
         </div>
 
-        <div class="banners-under-preview" id="banners-under-preview">
-          <h3>Баннеры</h3>
-          <div class="banners-row-under" id="banners-row-container"></div>
+        <div class="search-container">
+          <input type="text" id="search-input" placeholder="🔍 Поиск значков, фонов, баннеров...">
+          <button class="search-clear" id="search-clear">✕</button>
+        </div>
+        <div class="search-results" id="search-results"></div>
+
+        <main id="app"></main>
+
+        <div id="selected-slot-indicator" class="selection-hint" style="display: none;">
+          ✦ Выбран слот для бейджа: <span id="selected-slot-number"></span> <span id="selected-slot-mode"></span>
+        </div>
+
+        <div id="selected-banner-indicator" class="selection-hint banner-hint" style="display: none;">
+          ✦ Выбран <span id="selected-banner-side"></span> баннер
+        </div>
+      </div>
+
+      <div class="right-fixed-wrapper" aria-label="Preview and save">
+        <div class="preview-frame" id="previewFrame">
+          <canvas id="previewCanvas" width="900" height="500"></canvas>
+        </div>
+
+        <div class="save-controls">
+          <button id="save-fixed-btn" class="save-btn primary">Сохранить PNG 1600x900</button>
+          <button id="save-passport-btn" class="save-btn">💾 Сохранить .passport</button>
+          <button id="load-passport-btn" class="save-btn">📂 Загрузить .passport</button>
+          <input type="file" id="passport-file-input" accept=".passport">
+        </div>
+
+        <div class="buttons-under-preview">
+          <div class="badges-grid-under" id="badges-grid-under">
+            <div class="badge-mode-switcher">
+              <button id="switch-to-main" class="mode-btn active" data-mode="main">Значки</button>
+              <button id="switch-to-fav" class="mode-btn" data-mode="favorite">Любимые значки</button>
+            </div>
+            <div id="badges-grid-container"></div>
+          </div>
+
+          <div class="banners-under-preview" id="banners-under-preview">
+            <h3>Баннеры</h3>
+            <div class="banners-row-under" id="banners-row-container"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -1234,7 +1304,7 @@
           "achievements", "all", "anime", "cinema", "coders", "codes", "coop",
           "creators", "events", "halloween", "holidays", "iwas", "lamp", "limited",
           "messages", "newyear", "oldpoints", "oldseasons", "oldsides", "paws",
-          "rp", "shop", "support", "tournaments", "lampoteka", "ascents"
+          "rp", "shop", "support", "tournaments", "ascents"
         ],
         "backgrounds": [
           "all", "creators", "events", "holidays", "oldpoints", "oldseasons", "shop", "support"
@@ -2076,7 +2146,7 @@
           const response = await fetch(`${group}/index.json`);
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
           const allFiles = await response.json();
-
+  
           const prefix = category + '/';
           const fileList = allFiles
             .filter(item => item.startsWith(prefix))
@@ -2089,10 +2159,10 @@
 
           const grid = document.createElement('div');
           grid.className = 'grid';
-
+    
           for (const name of fileList) {
             const src = `${group}/${category}/${name}`;
-
+      
             const item = document.createElement('div');
             item.className = 'media-item';
             item.dataset.src = src;
@@ -2100,7 +2170,6 @@
             item.dataset.category = category;
             item.dataset.file = name;
 
-            // Контейнер для изображения с сохранением пропорций
             const wrapper = document.createElement('div');
             wrapper.className = 'img-wrapper';
 
@@ -2112,10 +2181,8 @@
             img.style.width = '100%';
             img.style.height = 'auto';
 
-            // Определяем пропорции после загрузки
             img.addEventListener('load', function() {
               const ratio = this.naturalWidth / this.naturalHeight;
-              // Если изображение слишком вытянутое, используем object-fit: cover
               if (ratio > 2 || ratio < 0.4) {
                 this.style.objectFit = 'cover';
                 this.style.aspectRatio = '1 / 1';
@@ -2138,7 +2205,9 @@
 
             const meta = document.createElement('div');
             meta.className = 'meta';
-            meta.textContent = getLocalizedName(group, category, name);
+            const displayName = getLocalizedName(group, category, name);
+            meta.textContent = displayName;
+            meta.title = displayName; // Полное название при наведении
 
             item.appendChild(wrapper);
             item.appendChild(meta);
@@ -3048,7 +3117,7 @@
         }
         const showResults = results.slice(0, 20);
         searchResults.innerHTML = showResults.map(r => `
-          <div class="search-result-item" data-group="${r.group}" data-category="${r.category}" data-filename="${r.filename}" data-fullpath="${r.fullPath}">
+          <div class="search-result-item" data-group="${r.group}" data-category="${r.category}" data-filename="${r.filename}" data-fullpath="${r.fullPath}" data-displayname="${r.displayName}">
             <img src="${r.fullPath}" onerror="this.style.display='none'" alt="${r.displayName}">
             <div>
               <div class="search-result-name">${r.displayName}</div>
@@ -3056,16 +3125,27 @@
             </div>
           </div>
         `).join('');
+  
         searchResults.querySelectorAll('.search-result-item').forEach(el => {
           el.addEventListener('click', async () => {
             const group = el.dataset.group;
             const category = el.dataset.category;
+            const filename = el.dataset.filename;
+            const displayName = el.dataset.displayname;
+            
+            // Переключаем группу
             currentGroup = group;
             currentCategory = category;
+            
+            // Обновляем кнопки групп
             document.querySelectorAll('.group-btn').forEach(b => {
               b.setAttribute('aria-pressed', b.dataset.group === group ? 'true' : 'false');
             });
+            
+            // Строим вкладки
             buildTabs(group);
+            
+            // Показываем/скрываем панели
             if (group === 'badges') {
               badgesGrid.style.display = 'block';
               bannersUnder.style.display = 'none';
@@ -3076,11 +3156,50 @@
               badgesGrid.style.display = 'none';
               bannersUnder.style.display = 'none';
             }
+            
+            // Очищаем поиск
             searchInput.value = '';
             searchResults.style.display = 'none';
             searchClear.style.display = 'none';
+            
+            // Ждем рендеринга и находим элемент
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+            // Ищем нужный элемент в сетке
+            const targetSrc = `${group}/${category}/${filename}`;
+            const mediaItems = document.querySelectorAll('.media-item');
+            let targetItem = null;
+            
+            for (const item of mediaItems) {
+              if (item.dataset.src === targetSrc) {
+                targetItem = item;
+                break;
+              }
+            }
+            
+            if (targetItem) {
+              // Убираем предыдущие выделения
+              document.querySelectorAll('.media-item.highlighted').forEach(el => {
+                el.classList.remove('highlighted');
+              });
+              
+              // Добавляем класс для подсветки
+              targetItem.classList.add('highlighted');
+              
+              // Прокручиваем к элементу
+              targetItem.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+              });
+              
+              // Через 3 секунды убираем подсветку
+              setTimeout(() => {
+                targetItem.classList.remove('highlighted');
+              }, 3000);
+            }
           });
         });
+        
         searchResults.style.display = 'block';
         searchClear.style.display = 'block';
       }
@@ -3505,6 +3624,7 @@
       }, 500);
 
     })();
+	
   </script>
 </body>
 </html>
