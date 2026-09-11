@@ -438,7 +438,12 @@
       transition: transform 0.2s, box-shadow 0.2s;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
       border-radius: 12px;
+	  isolation: isolate;
     }
+	.badge-btn img,
+	.banner-btn-under img {
+	  mix-blend-mode: multiply;
+	}
     .badge-btn:hover, .banner-btn-under:hover {
       transform: translateY(-4px);
       box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
@@ -932,6 +937,11 @@
         }
 
         .badges-row .badge-btn {
+            width: 70px;
+            height: 70px;
+        }
+
+		.badges-row .badge-btn img {
             width: 70px;
             height: 70px;
         }
